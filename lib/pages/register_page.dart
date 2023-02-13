@@ -3,6 +3,11 @@ import 'package:chat/widgets/boton_azul.dart';
 import 'package:chat/widgets/custom_input.dart';
 import 'package:chat/widgets/labels.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../helpers/mostrar_alerta.dart';
+import '../services/auth_service.dart';
+import '../services/socket_service.dart';
 
 class RegisterPage extends StatelessWidget {
   const RegisterPage({super.key});
@@ -50,12 +55,15 @@ class __FormState extends State<_Form> {
   final passCtrl = TextEditingController();
   @override
   Widget build(BuildContext context) {
+    final authService = Provider.of<AuthService>(context);
+    final socketService = Provider.of<SocketService>(context);
+
     return Container(
       margin: const EdgeInsets.only(top: 40),
       padding: const EdgeInsets.symmetric(horizontal: 50),
       child: Column(
         children: [
-                    CustomInput(
+          CustomInput(
             icon: Icons.perm_identity,
             placeholder: 'Nombre',
             keyBoardType: TextInputType.text,
@@ -77,10 +85,22 @@ class __FormState extends State<_Form> {
           BotonAzul(
             // shape: StadiumBorder(),
             text: 'Ingresar',
-            onpressed: () {
-              print(emailCtrl.text);
-              print(passCtrl.text);
-            },
+            onpressed: authService.autenticando
+                ? null
+                : () async {
+                    FocusScope.of(context).unfocus();
+                    final registerOk = await authService.register(
+                      nameCtrl.text.trim(),
+                      emailCtrl.text.trim(),
+                      passCtrl.text.trim(),
+                    );
+                    if (registerOk == true) {
+                      socketService.connect();
+                      Navigator.pushReplacementNamed(context, 'usuarios');
+                    } else {
+                      mostratAlerta(context, 'Error register', registerOk);
+                    }
+                  },
           )
         ],
       ),
